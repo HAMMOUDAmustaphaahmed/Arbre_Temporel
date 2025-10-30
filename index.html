@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quand la Conséquence Précède la Cause</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(ellipse at center, #0a0520 0%, #000000 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(255,255,255,0.03) 2px,
+                rgba(255,255,255,0.03) 4px
+            );
+            animation: scan 8s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(50px); }
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .concept-box {
+            background: linear-gradient(45deg, #1a1a2e, #16213e);
+            padding: 2rem;
+            margin: 2rem auto;
+            border-radius: 15px;
+            border: 2px solid #00d4ff;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+            text-align: center;
+            max-width: 900px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 20px rgba(0, 212, 255, 0.3); }
+            to { box-shadow: 0 0 40px rgba(0, 212, 255, 0.6); }
+        }
+
+        .concept-formula {
+            font-size: 1.5rem;
+            font-family: 'Courier New', monospace;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            margin: 1rem 0;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .container.fullscreen-mode {
+            grid-template-columns: 1fr;
+            padding: 0;
+            max-width: 100%;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9999;
+            background: #000;
+        }
+
+        .visualization-container {
+            position: relative;
+            background: linear-gradient(145deg, #0a0a0a, #1a1a1a);
+            border-radius: 20px;
+            border: 2px solid #333;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .container.fullscreen-mode .visualization-container {
+            border-radius: 0;
+            border: none;
+            height: 100vh;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 700px;
+            position: relative;
+            cursor: grab;
+        }
+
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+
+        .container.fullscreen-mode #canvas-container {
+            height: 100vh;
+        }
+
+        .fullscreen-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            padding: 0.8rem 1.5rem;
+            background: rgba(102, 126, 234, 0.8);
+            border: 2px solid #00d4ff;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(102, 126, 234, 1);
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .controls-panel {
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            border-radius: 20px;
+            border: 2px solid #444;
+            padding: 2rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            height: fit-content;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .container.fullscreen-mode .controls-panel {
+            display: none;
+        }
+
+        .control-group {
+            margin-bottom: 2rem;
+        }
+
+        .control-group h3 {
+            color: #00d4ff;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .slider-container {
+            margin-bottom: 1.5rem;
+        }
+
+        .slider-container label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: linear-gradient(90deg, #333, #666);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00d4ff, #00ff88);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00d4ff, #00ff88);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .value-display {
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            text-align: right;
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+        }
+
+        .container.fullscreen-mode .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .birth-node { background: #ffffff; }
+        .chosen-path { background: #ff0000; }
+        .not-chosen-path { background: #00ffff; }
+        .choice-node { background: #ffaa00; }
+        .parallel-path { background: #ff00ff; }
+
+        .play-controls {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .play-btn, .regenerate-btn, .parallel-btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            margin: 0.5rem;
+            width: calc(100% - 1rem);
+        }
+
+        .play-btn {
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            box-shadow: 0 5px 20px rgba(255, 107, 53, 0.3);
+        }
+
+        .play-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(255, 107, 53, 0.5);
+        }
+
+        .regenerate-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .regenerate-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .parallel-btn {
+            background: linear-gradient(45deg, #ff006e, #8338ec);
+            box-shadow: 0 5px 20px rgba(255, 0, 110, 0.3);
+        }
+
+        .parallel-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 30px rgba(255, 0, 110, 0.5);
+        }
+
+        .info-panel {
+            background: linear-gradient(145deg, #0f1419, #1a1f2e);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border: 1px solid #333;
+        }
+
+        .info-panel h4 {
+            color: #00d4ff;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .info-panel p {
+            color: #aaa;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 0.8rem;
+        }
+
+        .node-info {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 2px solid #00d4ff;
+            color: #fff;
+            font-size: 0.9rem;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+            display: none;
+        }
+
+        .node-info.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .temporal-wave {
+            position: absolute;
+            border: 2px solid rgba(0, 212, 255, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: wave-expand 3s ease-out infinite;
+        }
+
+        @keyframes wave-expand {
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+            100% {
+                width: 200px;
+                height: 200px;
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            #canvas-container {
+                height: 500px;
+            }
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00d4ff;
+            font-size: 1.2rem;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .spinner {
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #00d4ff;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .controls-hint {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid #00d4ff;
+            color: #ccc;
+            font-size: 0.85rem;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .controls-hint strong {
+            color: #00ff88;
+        }
+
+        .probability-indicator {
+            position: absolute;
+            color: #00ff88;
+            font-size: 0.7rem;
+            font-weight: bold;
+            pointer-events: none;
+            text-shadow: 0 0 5px rgba(0, 255, 136, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>مَا أَصَابَ مِن مُّصِيبَةٍ فِي الْأَرْضِ وَلَا فِي أَنفُسِكُمْ إِلَّا فِي كِتَابٍ مِّن قَبْلِ أَن نَّبْرَأَهَا ۚ إِنَّ ذَٰلِكَ عَلَى اللَّهِ يَسِيرٌ</h1>
+        <p> ما أصابكم أيها الناس من مصيبة في الأرض بجدوبها وقحوطها، وذهاب زرعها وفسادها، (وَلا فِي أَنْفُسِكُمْ ) بالأوصاب والأوجاع والأسقام، (إِلا فِي كِتَابٍ ) يعني: إلا في أمّ الكتاب، (مِنْ قَبْلِ أَنْ نَبْرَأَهَا ) يقول: من قبل أن نبرأ الأنفس، يعني: من قبل أن نخلقها، يقال: قد برأ الله هذا الشيء، بمعنى: خلقه فهو بارئه</p>تفسير الطبري
+    </div>
+
+    <div class="concept-box">
+        <div class="concept-formula">A(x,y,z) × (t₋, t₀, t₊)</div>
+        <p style="color: #ccc; margin-top: 1rem;">
+            Chaque point spatial possède un triplet temporel<br>
+            <strong>Passé • Présent • Futur coexistent simultanément</strong>
+        </p>
+        <p style="color: #00ff88; margin-top: 1rem; font-size: 1.1rem;">
+            "Tous les chemins existent. Vous choisissez celui que vous vivez."
+        </p>
+    </div>
+
+    <div class="container" id="main-container">
+        <div class="visualization-container">
+            <button class="fullscreen-btn" onclick="toggleFullscreen()">🖥️ Plein Écran</button>
+            <div class="controls-hint">
+                <strong>Contrôles :</strong><br>
+                🖱️ Clic gauche + glisser : Rotation<br>
+                🖱️ Molette : Zoom<br>
+                🖱️ Clic sur nœud : Explorer ce chemin<br>
+                🖱️ Clic droit + glisser : Panoramique
+            </div>
+            <div class="node-info" id="node-info">
+                <h4>📍 Informations du Nœud</h4>
+                <p id="node-details"></p>
+            </div>
+            <div id="canvas-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Génération de l'arbre des possibles...
+                </div>
+            </div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color birth-node"></div>
+                    <span>Naissance (Nœud initial)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color choice-node"></div>
+                    <span>Points de Choix</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color chosen-path"></div>
+                    <span>Chemin Choisi (vécu)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color not-chosen-path"></div>
+                    <span>Chemins Non Choisis</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color parallel-path"></div>
+                    <span>Vies Parallèles Non Choisis</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="control-group">
+                <h3>🌳 Structure de l'Arbre</h3>
+                
+                <div class="slider-container">
+                    <label>Nombre de Choix par Nœud</label>
+                    <input type="range" id="choice-count" min="2" max="5" step="1" value="2">
+                    <div class="value-display" id="choice-value">2 choix</div>
+                </div>
+
+                <div class="slider-container">
+                    <label>Profondeur (Nombre de Niveaux)</label>
+                    <input type="range" id="depth" min="2" max="7" step="1" value="4">
+                    <div class="value-display" id="depth-value">4 niveaux</div>
+                </div>
+
+                <div class="slider-container">
+                    <label>Espacement Vertical</label>
+                    <input type="range" id="vertical-spacing" min="3" max="10" step="0.5" value="5">
+                    <div class="value-display" id="vertical-value">5.0</div>
+                </div>
+
+                <div class="slider-container">
+                    <label>Espacement Horizontal</label>
+                    <input type="range" id="horizontal-spacing" min="2" max="8" step="0.5" value="4">
+                    <div class="value-display" id="horizontal-value">4.0</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>🎨 Apparence</h3>
+                
+                <div class="slider-container">
+                    <label>Taille des Nœuds</label>
+                    <input type="range" id="node-size" min="0.3" max="1.5" step="0.1" value="0.6">
+                    <div class="value-display" id="node-size-value">0.6</div>
+                </div>
+
+                <div class="slider-container">
+                    <label>Épaisseur des Lignes</label>
+                    <input type="range" id="line-width" min="1" max="5" step="0.5" value="2">
+                    <div class="value-display" id="line-value">2.0</div>
+                </div>
+
+                <div class="slider-container">
+                    <label>Intensité des Particules</label>
+                    <input type="range" id="particle-intensity" min="0" max="1" step="0.1" value="0.6">
+                    <div class="value-display" id="particle-value">0.6</div>
+                </div>
+
+                <div class="slider-container">
+                    <label>Afficher les Probabilités</label>
+                    <input type="range" id="show-probabilities" min="0" max="1" step="1" value="1">
+                    <div class="value-display" id="probability-value">Activé</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>🎬 Animation</h3>
+                
+                <div class="slider-container">
+                    <label>Vitesse de Rotation Auto</label>
+                    <input type="range" id="rotation-speed" min="0" max="2" step="0.1" value="0.3">
+                    <div class="value-display" id="rotation-value">0.3</div>
+                </div>
+
+                <div class="slider-container">
+                    <label>Ondes Temporelles</label>
+                    <input type="range" id="temporal-waves" min="0" max="1" step="1" value="1">
+                    <div class="value-display" id="waves-value">Activé</div>
+                </div>
+            </div>
+
+            <div class="play-controls">
+                <button class="play-btn" id="play-pause-btn" onclick="toggleAnimation()">⏸️ Pause</button>
+                <button class="regenerate-btn" onclick="regenerateTree()">🔄 Nouveau Chemin</button>
+                <button class="parallel-btn" onclick="toggleParallelLives()">🌈 Vies Parallèles</button>
+            </div>
+
+            <div class="info-panel">
+                <h4>🧠 Comprendre la Visualisation</h4>
+                <p><strong>Le nœud blanc</strong> = Votre naissance, le point de départ.</p>
+                <p><strong>Les sphères oranges</strong> = Points de choix dans votre vie.</p>
+                <p><strong>Le chemin rouge</strong> = La vie que vous avez vécue (les choix que vous avez faits).</p>
+                <p><strong>Les chemins cyan</strong> = Toutes les autres vies possibles (les choix que vous n'avez pas faits mais qui existent quand même).</p>
+                <p><strong>Les chemins magenta</strong> = Vies parallèles visualisées simultanément.</p>
+                <p><strong>Concept :</strong> À chaque nœud, vous choisissez une direction, mais TOUTES les autres directions continuent d'exister dans l'espace-temps. Votre conscience parcourt un seul chemin, mais tous les chemins coexistent.</p>
+                <p><strong>💡 Nouveau :</strong> Cliquez sur n'importe quel nœud pour explorer ce chemin alternatif !</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let scene, camera, renderer, raycaster, mouse;
+        let treeNodes = [];
+        let treeLines = [];
+        let particles = [];
+        let chosenPath = [];
+        let parallelPaths = [];
+        let isPlaying = true;
+        let time = 0;
+        let isFullscreen = false;
+        let showParallelLives = false;
+        let temporalWaves = [];
+
+        // Contrôles de souris
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let cameraRotation = { x: 0, y: 0 };
+        let cameraDistance = 30;
+
+        let params = {
+            choiceCount: 2,
+            depth: 4,
+            verticalSpacing: 5,
+            horizontalSpacing: 4,
+            nodeSize: 0.6,
+            lineWidth: 2,
+            particleIntensity: 0.6,
+            rotationSpeed: 0.3,
+            showProbabilities: true,
+            temporalWaves: true
+        };
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000510);
+            scene.fog = new THREE.FogExp2(0x000510, 0.015);
+
+            const container = document.getElementById('canvas-container');
+            camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 15, 30);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Éclairage amélioré
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+
+            const mainLight = new THREE.PointLight(0xffffff, 1.2, 100);
+            mainLight.position.set(0, 20, 20);
+            scene.add(mainLight);
+
+            const blueLight = new THREE.PointLight(0x00ffff, 0.8, 50);
+            blueLight.position.set(-20, 0, 0);
+            scene.add(blueLight);
+
+            const redLight = new THREE.PointLight(0xff0000, 0.8, 50);
+            redLight.position.set(20, 0, 0);
+            scene.add(redLight);
+
+            const purpleLight = new THREE.PointLight(0xff00ff, 0.6, 50);
+            purpleLight.position.set(0, -20, 0);
+            scene.add(purpleLight);
+
+            setupMouseControls();
+            createDecisionTree();
+            setupControls();
+            animate();
+
+            const loading = container.querySelector('.loading');
+            if (loading) loading.remove();
+        }
+
+        function setupMouseControls() {
+            const canvas = renderer.domElement;
+
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+
+                    cameraRotation.y += deltaX * 0.005;
+                    cameraRotation.x += deltaY * 0.005;
+
+                    cameraRotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraRotation.x));
+
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                } else {
+                    // Détection de survol pour interaction
+                    const rect = canvas.getBoundingClientRect();
+                    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                }
+            });
+
+            canvas.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                isDragging = false;
+            });
+
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                cameraDistance += e.deltaY * 0.05;
+                cameraDistance = Math.max(10, Math.min(100, cameraDistance));
+            });
+
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(treeNodes);
+
+                if (intersects.length > 0) {
+                    const clickedNode = intersects[0].object;
+                    onNodeClick(clickedNode);
+                }
+            });
+
+            // Support tactile
+            canvas.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (isDragging && e.touches.length === 1) {
+                    const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                    const deltaY = e.touches[0].clientY - previousMousePosition.y;
+
+                    cameraRotation.y += deltaX * 0.005;
+                    cameraRotation.x += deltaY * 0.005;
+                    cameraRotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraRotation.x));
+
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+
+            canvas.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+        }
+
+        function onNodeClick(node) {
+            const nodeInfo = document.getElementById('node-info');
+            const nodeDetails = document.getElementById('node-details');
+            
+            const level = node.userData.level;
+            const isOnChosenPath = node.userData.isOnChosenPath;
+            const probability = node.userData.probability || 100;
+            
+            let infoText = `<strong>Niveau :</strong> ${level}<br>`;
+            infoText += `<strong>Statut :</strong> ${isOnChosenPath ? 'Chemin vécu 🔴' : 'Chemin alternatif 🔵'}<br>`;
+            infoText += `<strong>Probabilité :</strong> ${probability.toFixed(1)}%<br>`;
+            
+            if (node.userData.isRoot) {
+                infoText += `<br><em>🌟 Point de naissance - Tous les futurs possibles rayonnent d'ici</em>`;
+            } else if (isOnChosenPath) {
+                infoText += `<br><em>✨ Ce chemin fait partie de votre réalité vécue</em>`;
+            } else {
+                infoText += `<br><em>💫 Ce chemin existe dans une réalité parallèle</em>`;
+            }
+            
+            nodeDetails.innerHTML = infoText;
+            nodeInfo.classList.add('active');
+            
+            // Créer une onde temporelle depuis ce nœud
+            if (params.temporalWaves) {
+                createTemporalWave(node.position);
+            }
+            
+            // Faire briller le nœud cliqué
+            node.material.emissiveIntensity = 1.5;
+            setTimeout(() => {
+                node.material.emissiveIntensity = node.userData.isRoot ? 0.8 : 0.4;
+            }, 1000);
+            
+            setTimeout(() => {
+                nodeInfo.classList.remove('active');
+            }, 5000);
+        }
+
+        function createTemporalWave(position) {
+            const waveGeometry = new THREE.RingGeometry(0.5, 0.7, 32);
+            const waveMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00d4ff,
+                transparent: true,
+                opacity: 0.8,
+                side: THREE.DoubleSide
+            });
+            
+            const wave = new THREE.Mesh(waveGeometry, waveMaterial);
+            wave.position.copy(position);
+            wave.lookAt(camera.position);
+            
+            scene.add(wave);
+            temporalWaves.push({ mesh: wave, scale: 1, opacity: 0.8 });
+        }
+
+        function createDecisionTree() {
+            // Nettoyer l'ancien arbre
+            treeNodes.forEach(obj => scene.remove(obj));
+            treeLines.forEach(obj => scene.remove(obj));
+            particles.forEach(obj => scene.remove(obj));
+            temporalWaves.forEach(obj => scene.remove(obj.mesh));
+
+            treeNodes = [];
+            treeLines = [];
+            particles = [];
+            parallelPaths = [];
+            temporalWaves = [];
+
+            // Créer les particules de fond
+            createBackgroundParticles();
+
+            // Générer le chemin choisi aléatoirement
+            generateChosenPath();
+            
+            // Générer des chemins parallèles
+            if (showParallelLives) {
+                generateParallelPaths(3); // 3 vies parallèles
+            }
+
+            // Créer l'arbre récursivement
+            const rootPos = new THREE.Vector3(0, 0, 0);
+            createTreeNode(rootPos, 0, 0, null, [], 100);
+        }
+
+        function generateChosenPath() {
+            chosenPath = [0]; // Commence au nœud racine
+            for (let level = 0; level < params.depth - 1; level++) {
+                const randomChoice = Math.floor(Math.random() * params.choiceCount);
+                chosenPath.push(randomChoice);
+            }
+        }
+
+        function generateParallelPaths(count) {
+            parallelPaths = [];
+            for (let i = 0; i < count; i++) {
+                const path = [0];
+                for (let level = 0; level < params.depth - 1; level++) {
+                    const randomChoice = Math.floor(Math.random() * params.choiceCount);
+                    path.push(randomChoice);
+                }
+                parallelPaths.push(path);
+            }
+        }
+
+        function isOnParallelPath(currentPath) {
+            for (let path of parallelPaths) {
+                let matches = true;
+                for (let i = 1; i < currentPath.length; i++) {
+                    if (currentPath[i] !== path[i - 1]) {
+                        matches = false;
+                        break;
+                    }
+                }
+                if (matches) return true;
+            }
+            return false;
+        }
+
+        function createTreeNode(position, level, branchIndex, parentPos, pathToNode, probability) {
+            if (level >= params.depth) return;
+
+            const isRoot = level === 0;
+            const currentPath = [...pathToNode, branchIndex];
+            const isOnChosenPath = isPathChosen(currentPath);
+            const isOnParallel = showParallelLives && isOnParallelPath(currentPath);
+
+            // Calculer la probabilité (diminue avec la profondeur)
+            const nodeProbability = probability / params.choiceCount;
+
+            // Créer le nœud
+            const nodeGeometry = new THREE.SphereGeometry(params.nodeSize, 32, 32);
+            let nodeColor = 0xffaa00; // Orange pour les choix normaux
+            
+            if (isRoot) {
+                nodeColor = 0xffffff; // Blanc pour la naissance
+            } else if (isOnChosenPath) {
+                nodeColor = 0xff0000; // Rouge pour le chemin choisi
+            } else if (isOnParallel) {
+                nodeColor = 0xff00ff; // Magenta pour les chemins parallèles
+            }
+
+            const nodeMaterial = new THREE.MeshPhongMaterial({
+                color: nodeColor,
+                emissive: nodeColor,
+                emissiveIntensity: isRoot ? 0.8 : 0.4,
+                transparent: true,
+                opacity: 0.9,
+                shininess: 100
+            });
+
+            const nodeMesh = new THREE.Mesh(nodeGeometry, nodeMaterial);
+            nodeMesh.position.copy(position);
+            nodeMesh.userData = { 
+                level, 
+                branchIndex, 
+                isOnChosenPath, 
+                isRoot,
+                probability: nodeProbability,
+                isOnParallel
+            };
+            scene.add(nodeMesh);
+            treeNodes.push(nodeMesh);
+
+            // Afficher la probabilité si activé
+            if (params.showProbabilities && !isRoot && level < 3) {
+                // Note: Les labels de texte ne sont pas facilement rendus en Three.js sans librairie supplémentaire
+                // On utilise l'opacité des lignes pour montrer la probabilité
+            }
+
+            // Créer la ligne de connexion au parent
+            if (parentPos) {
+                let lineColor = 0x00ffff; // Cyan par défaut
+                let lineOpacity = 0.5;
+                
+                if (isOnChosenPath) {
+                    lineColor = 0xff0000; // Rouge pour le chemin choisi
+                    lineOpacity = 0.9;
+                } else if (isOnParallel) {
+                    lineColor = 0xff00ff; // Magenta pour les chemins parallèles
+                    lineOpacity = 0.7;
+                }
+                
+                // Opacité basée sur la probabilité
+                lineOpacity *= (nodeProbability / 100);
+
+                const points = [parentPos, position];
+                const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+                const lineMaterial = new THREE.LineBasicMaterial({
+                    color: lineColor,
+                    transparent: true,
+                    opacity: lineOpacity,
+                    linewidth: params.lineWidth
+                });
+
+                const line = new THREE.Line(lineGeometry, lineMaterial);
+                line.userData = { isOnChosenPath, isOnParallel, probability: nodeProbability };
+                scene.add(line);
+                treeLines.push(line);
+            }
+
+            // Créer les branches enfants
+            if (level < params.depth - 1) {
+                const nextLevel = level + 1;
+                const spreadAngle = Math.PI / (params.choiceCount + 1);
+
+                for (let i = 0; i < params.choiceCount; i++) {
+                    const angle = (i - (params.choiceCount - 1) / 2) * spreadAngle;
+                    const horizontalOffset = Math.sin(angle) * params.horizontalSpacing * (nextLevel + 1);
+                    const depthOffset = Math.cos(angle) * params.horizontalSpacing * 0.5;
+
+                    const childPos = new THREE.Vector3(
+                        position.x + horizontalOffset,
+                        position.y - params.verticalSpacing,
+                        position.z + depthOffset
+                    );
+
+                    createTreeNode(childPos, nextLevel, i, position, currentPath, nodeProbability);
+                }
+            }
+        }
+
+        function isPathChosen(path) {
+            if (path.length === 0) return true; // Le nœud racine
+            for (let i = 1; i < path.length; i++) {
+                if (path[i] !== chosenPath[i - 1]) return false;
+            }
+            return true;
+        }
+
+        function createBackgroundParticles() {
+            if (params.particleIntensity === 0) return;
+
+            const particleCount = 1000;
+            const particleGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                positions[i3] = (Math.random() - 0.5) * 100;
+                positions[i3 + 1] = (Math.random() - 0.5) * 100;
+                positions[i3 + 2] = (Math.random() - 0.5) * 100;
+
+                const color = new THREE.Color();
+                color.setHSL(Math.random() * 0.3 + 0.5, 0.8, 0.6);
+                colors[i3] = color.r;
+                colors[i3 + 1] = color.g;
+                colors[i3 + 2] = color.b;
+            }
+
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const particleMaterial = new THREE.PointsMaterial({
+                size: 0.3,
+                vertexColors: true,
+                transparent: true,
+                opacity: params.particleIntensity,
+                blending: THREE.AdditiveBlending
+            });
+
+            const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particleSystem);
+            particles.push(particleSystem);
+        }
+
+        function animate() {
+            if (isPlaying) {
+                time += 0.01;
+
+                // Animer les nœuds
+                treeNodes.forEach((node, index) => {
+                    if (node.userData.isRoot) {
+                        // Animation spéciale pour la naissance
+                        node.material.emissiveIntensity = 0.5 + Math.sin(time * 3) * 0.3;
+                        node.scale.set(
+                            1 + Math.sin(time * 2) * 0.15,
+                            1 + Math.sin(time * 2) * 0.15,
+                            1 + Math.sin(time * 2) * 0.15
+                        );
+                    } else {
+                        node.rotation.x += 0.01;
+                        node.rotation.y += 0.01;
+                        const pulse = Math.sin(time * 2 + index * 0.3) * 0.5 + 0.5;
+                        
+                        if (node.userData.isOnChosenPath) {
+                            node.material.emissiveIntensity = 0.6 + pulse * 0.2;
+                        } else if (node.userData.isOnParallel) {
+                            node.material.emissiveIntensity = 0.5 + pulse * 0.2;
+                        } else {
+                            node.material.emissiveIntensity = 0.2 + pulse * 0.2;
+                        }
+                    }
+                });
+
+                // Animer les lignes
+                treeLines.forEach((line, index) => {
+                    if (line.userData.isOnChosenPath) {
+                        const pulse = Math.sin(time * 3 + index * 0.2) * 0.5 + 0.5;
+                        line.material.opacity = 0.7 + pulse * 0.2;
+                    } else if (line.userData.isOnParallel) {
+                        const pulse = Math.sin(time * 2.5 + index * 0.25) * 0.5 + 0.5;
+                        line.material.opacity = 0.5 + pulse * 0.2;
+                    } else {
+                        const wave = Math.sin(time * 1.5 + index * 0.4) * 0.5 + 0.5;
+                        line.material.opacity = (0.3 + wave * 0.2) * (line.userData.probability / 100);
+                    }
+                });
+
+                // Animer les particules
+                particles.forEach(system => {
+                    system.rotation.y += 0.0003;
+                    system.rotation.x += 0.0002;
+                });
+
+                // Animer les ondes temporelles
+                temporalWaves = temporalWaves.filter(wave => {
+                    wave.scale += 0.05;
+                    wave.opacity -= 0.01;
+                    wave.mesh.scale.set(wave.scale, wave.scale, 1);
+                    wave.mesh.material.opacity = wave.opacity;
+                    
+                    if (wave.opacity <= 0) {
+                        scene.remove(wave.mesh);
+                        return false;
+                    }
+                    return true;
+                });
+
+                // Rotation automatique si activée
+                if (params.rotationSpeed > 0 && !isDragging) {
+                    cameraRotation.y += params.rotationSpeed * 0.003;
+                }
+            }
+
+            // Mettre à jour la position de la caméra basée sur les contrôles
+            updateCameraPosition();
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        function updateCameraPosition() {
+            camera.position.x = cameraDistance * Math.sin(cameraRotation.y) * Math.cos(cameraRotation.x);
+            camera.position.y = cameraDistance * Math.sin(cameraRotation.x);
+            camera.position.z = cameraDistance * Math.cos(cameraRotation.y) * Math.cos(cameraRotation.x);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function setupControls() {
+            document.getElementById('choice-count').addEventListener('input', (e) => {
+                params.choiceCount = parseInt(e.target.value);
+                document.getElementById('choice-value').textContent = `${params.choiceCount} choix`;
+                createDecisionTree();
+            });
+
+            document.getElementById('depth').addEventListener('input', (e) => {
+                params.depth = parseInt(e.target.value);
+                document.getElementById('depth-value').textContent = `${params.depth} niveaux`;
+                createDecisionTree();
+            });
+
+            document.getElementById('vertical-spacing').addEventListener('input', (e) => {
+                params.verticalSpacing = parseFloat(e.target.value);
+                document.getElementById('vertical-value').textContent = params.verticalSpacing.toFixed(1);
+                createDecisionTree();
+            });
+
+            document.getElementById('horizontal-spacing').addEventListener('input', (e) => {
+                params.horizontalSpacing = parseFloat(e.target.value);
+                document.getElementById('horizontal-value').textContent = params.horizontalSpacing.toFixed(1);
+                createDecisionTree();
+            });
+
+            document.getElementById('node-size').addEventListener('input', (e) => {
+                params.nodeSize = parseFloat(e.target.value);
+                document.getElementById('node-size-value').textContent = params.nodeSize.toFixed(1);
+                createDecisionTree();
+            });
+
+            document.getElementById('line-width').addEventListener('input', (e) => {
+                params.lineWidth = parseFloat(e.target.value);
+                document.getElementById('line-value').textContent = params.lineWidth.toFixed(1);
+            });
+
+            document.getElementById('particle-intensity').addEventListener('input', (e) => {
+                params.particleIntensity = parseFloat(e.target.value);
+                document.getElementById('particle-value').textContent = params.particleIntensity.toFixed(1);
+                particles.forEach(system => {
+                    system.material.opacity = params.particleIntensity;
+                });
+                if (params.particleIntensity > 0 && particles.length === 0) {
+                    createBackgroundParticles();
+                }
+            });
+
+            document.getElementById('rotation-speed').addEventListener('input', (e) => {
+                params.rotationSpeed = parseFloat(e.target.value);
+                document.getElementById('rotation-value').textContent = params.rotationSpeed.toFixed(1);
+            });
+
+            document.getElementById('show-probabilities').addEventListener('input', (e) => {
+                params.showProbabilities = parseInt(e.target.value) === 1;
+                document.getElementById('probability-value').textContent = params.showProbabilities ? 'Activé' : 'Désactivé';
+            });
+
+            document.getElementById('temporal-waves').addEventListener('input', (e) => {
+                params.temporalWaves = parseInt(e.target.value) === 1;
+                document.getElementById('waves-value').textContent = params.temporalWaves ? 'Activé' : 'Désactivé';
+            });
+        }
+
+        function toggleAnimation() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('play-pause-btn');
+            btn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+        }
+
+        function regenerateTree() {
+            createDecisionTree();
+        }
+
+        function toggleParallelLives() {
+            showParallelLives = !showParallelLives;
+            const btn = event.target;
+            btn.textContent = showParallelLives ? '🌈 Masquer Parallèles' : '🌈 Vies Parallèles';
+            createDecisionTree();
+        }
+
+        function toggleFullscreen() {
+            const container = document.getElementById('main-container');
+            isFullscreen = !isFullscreen;
+            
+            if (isFullscreen) {
+                container.classList.add('fullscreen-mode');
+                document.querySelector('.fullscreen-btn').textContent = '🗙 Quitter';
+            } else {
+                container.classList.remove('fullscreen-mode');
+                document.querySelector('.fullscreen-btn').textContent = '🖥️ Plein Écran';
+            }
+            
+            onWindowResize();
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        window.addEventListener('resize', onWindowResize);
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
